@@ -1,0 +1,26 @@
+{
+  "name": "@bwcroft/veloci-router",
+  "version": "0.1.0",
+  "homepage": "https://github.com/bwcroft/veloci-router#readme",
+  "bugs": {
+    "url": "https://github.com/bwcroft/veloci-router/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bwcroft/veloci-router.git"
+  },
+  "license": "MIT",
+  "author": "Brenden Croft",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts", 
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

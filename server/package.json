@@ -1,0 +1,11 @@
+{
+  "name": "server",
+  "private": "true",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@bwcroft/veloci-router": "workspace:*"
+  }
+}
