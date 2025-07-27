@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
+    "server": "pnpm run build && node ./server/dist/server.js",
     "preinstall": "npx only-allow pnpm"
   },
   "devDependencies": {
@@ -16,10 +17,5 @@
     "prettier": "3.6.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "typescript": "$typescript"
-    }
   }
 }

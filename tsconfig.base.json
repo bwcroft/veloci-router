@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
+    "composite": true,
     "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "noImplicitAny": true,
-    "isolatedModules": true,
-    "noEmitOnError": true
-  },
-  "exclude": ["node_modules", "dist"]
+    "rootDir": "src",
+    "outDir": "dist"
+  }
 }

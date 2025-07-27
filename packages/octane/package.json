@@ -12,8 +12,14 @@
   "license": "MIT",
   "author": "Brenden Croft",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "./dist/index.d.ts", 
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],
