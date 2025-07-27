@@ -1,5 +1,5 @@
 {
-  "name": "node-packages",
+  "name": "nodejs-toolkit",
   "private": true,
   "type": "module",
   "engines": {
