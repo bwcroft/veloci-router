@@ -1,7 +1,10 @@
 {
-  "name": "octane-monorepo",
+  "name": "node-packages",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc --build",
     "server": "pnpm run build && node ./server/dist/server.js",
