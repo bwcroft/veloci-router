@@ -6,6 +6,6 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
-    "@bwcroft/veloci-router": "workspace:*"
+    "@bwcroft/octane": "workspace:*"
   }
 }

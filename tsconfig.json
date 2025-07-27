@@ -2,6 +2,6 @@
   "files": [],
   "references": [
     { "path": "server" },
-    { "path": "packages/veloci-router" }
+    { "path": "packages/octane" }
   ]
 }

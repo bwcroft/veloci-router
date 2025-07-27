@@ -1,4 +1,4 @@
-import { Router } from '@bwcroft/veloci-router'
+import { Router } from '@bwcroft/octane'
 
 const router = new Router()
 

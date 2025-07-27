@@ -1,13 +1,13 @@
 {
-  "name": "@bwcroft/veloci-router",
+  "name": "@bwcroft/octane",
   "version": "0.1.0",
-  "homepage": "https://github.com/bwcroft/veloci-router#readme",
+  "homepage": "https://github.com/bwcroft/octane#readme",
   "bugs": {
-    "url": "https://github.com/bwcroft/veloci-router/issues"
+    "url": "https://github.com/bwcroft/octane/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bwcroft/veloci-router.git"
+    "url": "git+https://github.com/bwcroft/octane.git"
   },
   "license": "MIT",
   "author": "Brenden Croft",

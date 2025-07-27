@@ -1,5 +1,5 @@
 {
-  "name": "veloci-router",
+  "name": "octane-monorepo",
   "private": true,
   "type": "module",
   "scripts": {
