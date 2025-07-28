@@ -1,6 +1,7 @@
-import http, { ServerResponse } from 'http'
+import http from 'http'
 import { RouterNode } from './routerNode.js'
-import { MatchedRoute, RouteContext, RouteHandler, RouteMethod } from '../types/index.js'
+import { resToHttpReponse } from '../decorators/index.js'
+import type { MatchedRoute, RouteContext, RouteHandler, RouteMethod } from '../types/index.js'
 
 export class Router {
   private root: Map<string, RouterNode>
@@ -9,11 +10,11 @@ export class Router {
     this.root = new Map()
   }
 
-  private _splitPath(path: string) {
+  #splitPath(path: string) {
     return path?.split('/').filter(Boolean)
   }
 
-  private _getUrlParamName(segment: string) {
+  #getUrlParamName(segment: string) {
     let paramName: string | undefined
     if (segment.startsWith(':')) {
       paramName = segment.slice(1)
@@ -21,16 +22,16 @@ export class Router {
     return paramName
   }
 
-  private _add(method: RouteMethod, path: string, handler: RouteHandler) {
+  #add(method: RouteMethod, path: string, handler: RouteHandler) {
     if (!this.root.has(method)) {
       this.root.set(method, new RouterNode())
     }
 
-    const segments = this._splitPath(path)
+    const segments = this.#splitPath(path)
     let node = this.root.get(method)
 
     for (const segment of segments) {
-      const paramName = this._getUrlParamName(segment)
+      const paramName = this.#getUrlParamName(segment)
       if (paramName && node) {
         if (node?.paramName && node.paramName !== paramName) {
           throw new Error(
@@ -54,9 +55,9 @@ export class Router {
     }
   }
 
-  private _match(method: RouteMethod, path: string): MatchedRoute | null {
+  #match(method: RouteMethod, path: string): MatchedRoute | null {
     try {
-      const segments = this._splitPath(path)
+      const segments = this.#splitPath(path)
       const params: RouteContext['params'] = {}
       let node = this.root.get(method)
 
@@ -86,16 +87,19 @@ export class Router {
     }
   }
 
-  private _createServer() {
-    return http.createServer(async (req, res) => {
-      if (!req.url || typeof req.method !== 'string') {
-        this.sendNotFound(res)
-        return
-      }
+  #createServer() {
+    return http.createServer(async (req, r) => {
+      const res = resToHttpReponse(r)
 
       try {
+        if (!req.url || typeof req.method !== 'string') {
+          res.sendNotFound()
+          return
+        }
+
         const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host}`)
-        const route = this._match(req.method as RouteMethod, pathname)
+        const route = this.#match(req.method as RouteMethod, pathname)
+
         if (route) {
           await route.handler(req, res, {
             path: pathname,
@@ -103,47 +107,36 @@ export class Router {
             searchParams,
           })
         } else {
-          this.sendNotFound(res)
+          res.sendNotFound()
         }
       } catch (err) {
         console.error('Handler error:', err)
-        this.sendError(res)
+        res.sendServerError()
       }
     })
   }
 
   get(path: string, handler: RouteHandler) {
-    this._add('GET', path, handler)
+    this.#add('GET', path, handler)
   }
 
   post(path: string, handler: RouteHandler) {
-    this._add('POST', path, handler)
+    this.#add('POST', path, handler)
   }
 
   put(path: string, handler: RouteHandler) {
-    this._add('PUT', path, handler)
+    this.#add('PUT', path, handler)
   }
 
   patch(path: string, handler: RouteHandler) {
-    this._add('PATCH', path, handler)
+    this.#add('PATCH', path, handler)
   }
 
   delete(path: string, handler: RouteHandler) {
-    this._add('DELETE', path, handler)
+    this.#add('DELETE', path, handler)
   }
 
-  sendNotFound(res: ServerResponse) {
-    res.writeHead(404, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ error: 'Not found' }))
-  }
-
-  sendError(res: http.ServerResponse) {
-    res.statusCode = 500
-    res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ error: 'Internal Server Error' }))
-  }
-
-  listen(port: string, callback: () => void) {
-    this._createServer().listen(port, callback)
+  listen(port: string, listener?: () => void) {
+    this.#createServer().listen(port, listener)
   }
 }

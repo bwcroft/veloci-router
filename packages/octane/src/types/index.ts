@@ -1,9 +1,16 @@
-import { URLSearchParams } from 'url'
-import { IncomingMessage, ServerResponse } from 'http'
+import type { URLSearchParams } from 'url'
+import { IncomingMessage, ServerResponse as ServerResponse } from 'http'
+import type { sendText, sendJson, sendNotFound, sendServerError } from '../decorators/resultDecorators.js'
+
+export interface HttpReponse extends ServerResponse {
+  sendText: typeof sendText
+  sendJson: typeof sendJson
+  sendNotFound: typeof sendNotFound
+  sendServerError: typeof sendServerError
+}
 
 export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
-
-export type RouteHandler = (req: IncomingMessage, res: ServerResponse, ctx: RouteContext) => void | Promise<void>
+export type RouteHandler = (req: IncomingMessage, res: HttpReponse, ctx: RouteContext) => void | Promise<void>
 
 export interface RouteContext {
   path: string
