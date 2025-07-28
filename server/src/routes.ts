@@ -12,8 +12,7 @@ router.get('/', (_, res) => {
 })
 
 router.get('/speed', (_, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json' })
-  res.end(JSON.stringify({ hello: 'world' }))
+  res.sendJson(200, { hello: 'world' })
 })
 
 export default router
