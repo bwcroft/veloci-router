@@ -2,22 +2,22 @@ import { ServerResponse } from 'http'
 
 type SendJsonData = string | Record<string | number | symbol, unknown> | unknown[]
 
-export function sendText(this: ServerResponse, status: number, data: string) {
+export function sendText(this: ServerResponse, status: number, data: string): void {
   this.writeHead(status, { 'Content-Type': 'text/plain' })
   this.end(data)
 }
 
-export function sendJson(this: ServerResponse, status: number, data: SendJsonData) {
+export function sendJson(this: ServerResponse, status: number, data: SendJsonData): void {
   this.writeHead(status, { 'Content-Type': 'application/json' })
   this.end(typeof data === 'string' ? data : JSON.stringify(data))
 }
 
-export function sendNotFound(this: ServerResponse) {
+export function sendNotFound(this: ServerResponse): void {
   this.writeHead(404, { 'Content-Type': 'application/json' })
   this.end(JSON.stringify({ error: 'Not found' }))
 }
 
-export function sendServerError(this: ServerResponse) {
+export function sendServerError(this: ServerResponse): void {
   this.writeHead(500, { 'Content-Type': 'application/json' })
   this.end(JSON.stringify({ error: 'Internal Server Error' }))
 }

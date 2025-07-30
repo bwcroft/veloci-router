@@ -1,6 +1,6 @@
 import http from 'http'
 import { RouterNode } from './routerNode.js'
-import { resToHttpReponse } from '../decorators/index.js'
+import { resToHttpResponse } from '../decorators/index.js'
 import type { MatchedRoute, RouteContext, RouteHandler, RouteMethod } from '../types/index.js'
 
 export class Router {
@@ -89,7 +89,7 @@ export class Router {
 
   #createServer() {
     return http.createServer(async (req, r) => {
-      const res = resToHttpReponse(r)
+      const res = resToHttpResponse(r, req.method === 'HEAD')
 
       try {
         if (!req.url || typeof req.method !== 'string') {
@@ -118,6 +118,7 @@ export class Router {
 
   get(path: string, handler: RouteHandler) {
     this.#add('GET', path, handler)
+    this.head(path, handler)
   }
 
   post(path: string, handler: RouteHandler) {
@@ -134,6 +135,14 @@ export class Router {
 
   delete(path: string, handler: RouteHandler) {
     this.#add('DELETE', path, handler)
+  }
+
+  head(path: string, handler: RouteHandler) {
+    this.#add('HEAD', path, handler)
+  }
+
+  options(path: string, handler: RouteHandler) {
+    this.#add('OPTIONS', path, handler)
   }
 
   listen(port: string, listener?: () => void) {

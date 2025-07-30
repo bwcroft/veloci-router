@@ -2,7 +2,7 @@ import type { URLSearchParams } from 'url'
 import { IncomingMessage, ServerResponse as ServerResponse } from 'http'
 import type { sendText, sendJson, sendNotFound, sendServerError } from '../decorators/resultDecorators.js'
 
-export interface HttpReponse extends ServerResponse {
+export interface HttpResponse extends ServerResponse {
   sendText: typeof sendText
   sendJson: typeof sendJson
   sendNotFound: typeof sendNotFound
@@ -10,7 +10,7 @@ export interface HttpReponse extends ServerResponse {
 }
 
 export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
-export type RouteHandler = (req: IncomingMessage, res: HttpReponse, ctx: RouteContext) => void | Promise<void>
+export type RouteHandler = (req: IncomingMessage, res: HttpResponse, ctx: RouteContext) => void | Promise<void>
 
 export interface RouteContext {
   path: string
