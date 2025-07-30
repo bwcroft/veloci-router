@@ -1,10 +1,11 @@
 import type { URLSearchParams } from 'url'
 import { IncomingMessage, ServerResponse as ServerResponse } from 'http'
-import type { sendText, sendJson, sendNotFound, sendServerError } from '../decorators/resultDecorators.js'
+import type { sendText, sendJson, sendNotFound, sendServerError, sendXml } from '../decorators/resultDecorators.js'
 
 export interface HttpResponse extends ServerResponse {
   sendText: typeof sendText
   sendJson: typeof sendJson
+  sendXml: typeof sendXml
   sendNotFound: typeof sendNotFound
   sendServerError: typeof sendServerError
 }
