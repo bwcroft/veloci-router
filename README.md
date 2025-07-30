@@ -49,7 +49,7 @@ This monorepo is fully committed to modern JavaScript standards. As such:
 ## Getting Started
 
 1. Clone the repository.
-2. Run `pnpm install` (or the preferred package manager) at the root to install dependencies.
+2. Run `pnpm install` at the root to install dependencies.
 3. Use workspace commands to build, test, and develop packages.
 4. All packages are ESM-ready, so import them using `import` syntax.
 
