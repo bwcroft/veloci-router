@@ -5,7 +5,14 @@
   "engines": {
     "node": ">=20"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "build": "tsc --build",
@@ -14,12 +21,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "24.1.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "globals": "^16.3.0",
+    "jest": "^30.0.5",
     "prettier": "3.6.2",
+    "ts-jest": "^29.4.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0"
   }
