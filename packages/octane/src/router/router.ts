@@ -55,7 +55,7 @@ export class Router {
     }
   }
 
-  #match(method: RouteMethod, path: string): MatchedRoute | null {
+  match(method: RouteMethod, path: string): MatchedRoute | null {
     try {
       const segments = this.#splitPath(path)
       const params: RouteContext['params'] = {}
@@ -98,7 +98,7 @@ export class Router {
         }
 
         const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host}`)
-        const route = this.#match(req.method as RouteMethod, pathname)
+        const route = this.match(req.method as RouteMethod, pathname)
 
         if (route) {
           await route.handler(req, res, {

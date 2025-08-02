@@ -5,6 +5,11 @@
   "engines": {
     "node": ">=20"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

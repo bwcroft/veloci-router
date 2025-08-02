@@ -11,15 +11,20 @@ export interface HttpResponse extends ServerResponse {
 }
 
 export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
-export type RouteHandler = (req: IncomingMessage, res: HttpResponse, ctx: RouteContext) => void | Promise<void>
+export type RouteHandler<P extends RouteParmas = RouteParmas> = (
+  req: IncomingMessage,
+  res: HttpResponse,
+  ctx: RouteContext<P>,
+) => void | Promise<void>
 
-export interface RouteContext {
+export type RouteParmas = Record<string, string>
+export interface RouteContext<P extends RouteParmas = RouteParmas> {
   path: string
-  params: Record<string, string>
+  params: P
   searchParams: URLSearchParams
 }
 
-export interface MatchedRoute {
-  handler: RouteHandler
+export interface MatchedRoute<P extends RouteParmas = RouteParmas> {
+  handler: RouteHandler<P>
   params: Record<string, string>
 }
