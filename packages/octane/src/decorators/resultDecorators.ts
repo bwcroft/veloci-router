@@ -13,7 +13,7 @@ export function sendJson(this: HttpResponse, status: number, data: SendJsonData)
 }
 
 export function sendXml(this: HttpResponse, status: number, data: string): void {
-  this.writeHead(200, {
+  this.writeHead(status, {
     'Content-Type': 'application/xml',
     'Content-Length': Buffer.byteLength(data),
   })
