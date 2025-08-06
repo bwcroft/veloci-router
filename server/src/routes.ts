@@ -1,18 +1,12 @@
 import { Router } from '@bwcroft/octane'
-import pkg from '../package.json' with { type: 'json' }
+import { getRoot, getSpeed } from './handlers/rootHandlers.js'
+import { getUser } from './handlers/userHandlers.js'
 
 const router = new Router()
 
-router.get('/', (_, res) => {
-  res.sendJson(200, {
-    name: pkg.name,
-    type: pkg.type,
-    private: pkg.private,
-  })
-})
+router.get('/', getRoot)
+router.get('/speed', getSpeed)
 
-router.get('/speed', (_, res) => {
-  res.sendJson(200, { hello: 'world' })
-})
+router.get('/users/:id', getUser)
 
 export default router

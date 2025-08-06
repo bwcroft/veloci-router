@@ -3,6 +3,8 @@ import { RouterNode } from './routerNode.js'
 import { resToHttpResponse } from '../decorators/index.js'
 import type { MatchedRoute, RouteContext, RouteHandler, RouteMethod } from '../types/index.js'
 
+type RegisterRoute = <P extends string, T extends object = object>(path: string, handler: RouteHandler<P, T>) => void
+
 export class Router {
   private root: Map<string, RouterNode>
 
@@ -22,7 +24,7 @@ export class Router {
     return paramName
   }
 
-  #add(method: RouteMethod, path: string, handler: RouteHandler) {
+  #add<P extends string, T extends object = object>(method: RouteMethod, path: string, handler: RouteHandler<P, T>) {
     if (!this.root.has(method)) {
       this.root.set(method, new RouterNode())
     }
@@ -51,7 +53,7 @@ export class Router {
     }
 
     if (node) {
-      node.handler = handler
+      node.handler = handler as RouteHandler
     }
   }
 
@@ -116,32 +118,32 @@ export class Router {
     })
   }
 
-  get(path: string, handler: RouteHandler) {
+  get: RegisterRoute = (path, handler) => {
     this.#add('GET', path, handler)
     this.head(path, handler)
   }
 
-  post(path: string, handler: RouteHandler) {
+  post: RegisterRoute = (path, handler) => {
     this.#add('POST', path, handler)
   }
 
-  put(path: string, handler: RouteHandler) {
+  put: RegisterRoute = (path, handler) => {
     this.#add('PUT', path, handler)
   }
 
-  patch(path: string, handler: RouteHandler) {
+  patch: RegisterRoute = (path, handler) => {
     this.#add('PATCH', path, handler)
   }
 
-  delete(path: string, handler: RouteHandler) {
+  delete: RegisterRoute = (path, handler) => {
     this.#add('DELETE', path, handler)
   }
 
-  head(path: string, handler: RouteHandler) {
+  head: RegisterRoute = (path, handler) => {
     this.#add('HEAD', path, handler)
   }
 
-  options(path: string, handler: RouteHandler) {
+  options: RegisterRoute = (path, handler) => {
     this.#add('OPTIONS', path, handler)
   }
 
