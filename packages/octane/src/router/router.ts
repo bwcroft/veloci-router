@@ -12,11 +12,11 @@ export class Router {
     this.root = new Map()
   }
 
-  #splitPath(path: string) {
+  private splitPath(path: string) {
     return path?.split('/').filter(Boolean)
   }
 
-  #getUrlParamName(segment: string) {
+  private getUrlParamName(segment: string) {
     let paramName: string | undefined
     if (segment.startsWith(':')) {
       paramName = segment.slice(1)
@@ -24,16 +24,20 @@ export class Router {
     return paramName
   }
 
-  #add<P extends string, T extends object = object>(method: RouteMethod, path: string, handler: RouteHandler<P, T>) {
+  private add<P extends string, T extends object = object>(
+    method: RouteMethod,
+    path: string,
+    handler: RouteHandler<P, T>,
+  ) {
     if (!this.root.has(method)) {
       this.root.set(method, new RouterNode())
     }
 
-    const segments = this.#splitPath(path)
+    const segments = this.splitPath(path)
     let node = this.root.get(method)
 
     for (const segment of segments) {
-      const paramName = this.#getUrlParamName(segment)
+      const paramName = this.getUrlParamName(segment)
       if (paramName && node) {
         if (node?.paramName && node.paramName !== paramName) {
           throw new Error(
@@ -59,7 +63,7 @@ export class Router {
 
   match(method: RouteMethod, path: string): MatchedRoute | null {
     try {
-      const segments = this.#splitPath(path)
+      const segments = this.splitPath(path)
       const params: RouteContext['params'] = {}
       let node = this.root.get(method)
 
@@ -89,7 +93,7 @@ export class Router {
     }
   }
 
-  #createServer() {
+  private createServer() {
     return http.createServer(async (req, r) => {
       const res = resToHttpResponse(r, req.method === 'HEAD')
 
@@ -119,35 +123,35 @@ export class Router {
   }
 
   get: RegisterRoute = (path, handler) => {
-    this.#add('GET', path, handler)
+    this.add('GET', path, handler)
     this.head(path, handler)
   }
 
   post: RegisterRoute = (path, handler) => {
-    this.#add('POST', path, handler)
+    this.add('POST', path, handler)
   }
 
   put: RegisterRoute = (path, handler) => {
-    this.#add('PUT', path, handler)
+    this.add('PUT', path, handler)
   }
 
   patch: RegisterRoute = (path, handler) => {
-    this.#add('PATCH', path, handler)
+    this.add('PATCH', path, handler)
   }
 
   delete: RegisterRoute = (path, handler) => {
-    this.#add('DELETE', path, handler)
+    this.add('DELETE', path, handler)
   }
 
   head: RegisterRoute = (path, handler) => {
-    this.#add('HEAD', path, handler)
+    this.add('HEAD', path, handler)
   }
 
   options: RegisterRoute = (path, handler) => {
-    this.#add('OPTIONS', path, handler)
+    this.add('OPTIONS', path, handler)
   }
 
   listen(port: string, listener?: () => void) {
-    this.#createServer().listen(port, listener)
+    this.createServer().listen(port, listener)
   }
 }
