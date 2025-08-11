@@ -1,12 +1,18 @@
 import type { RouteHandler } from '@bwcroft/octane'
+import type { UserLoggerCtx } from '../middleware/userMiddleware.js'
 
-interface User {
-  first: string
-  last: string
-  email?: string
+export const getUsers: RouteHandler = (req, res, ctx) => {
+  if ('user' in ctx) {
+    res.sendJson(200, ctx.user)
+  } else {
+    res.sendJson(200, 'No user found')
+  }
 }
 
-export const getUser: RouteHandler<'id', { user: User }> = (req, res, ctx) => {
-  const { id } = ctx.params
-  res.sendText(200, `UserId: ${id}`)
+export const getUser: RouteHandler<'id', UserLoggerCtx> = (req, res, ctx) => {
+  if (ctx.user) {
+    res.sendJson(200, ctx.user)
+  } else {
+    res.sendNotFound()
+  }
 }
