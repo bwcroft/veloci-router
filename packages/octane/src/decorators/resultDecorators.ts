@@ -18,6 +18,15 @@ export function sendXml(this: HttpResponse, status: number, data: string): void 
   this.end(data.trim())
 }
 
+export function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
+  const status = permanent ? 301 : 302
+  this.writeHead(status, { Location: url })
+}
+
+export function sendUnathorized(this: HttpResponse, msg: string) {
+  this.sendText(401, msg)
+}
+
 export function sendNotFound(this: HttpResponse): void {
   this.sendJson(404, { error: 'Not found' })
 }

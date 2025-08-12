@@ -1,6 +1,6 @@
 import { ServerResponse } from 'http'
 import { HttpResponse } from '../types/index.js'
-import { sendText, sendJson, sendNotFound, sendServerError } from './resultDecorators.js'
+import { sendText, sendJson, sendNotFound, sendServerError, sendUnathorized, redirect } from './resultDecorators.js'
 
 type EndCB = () => void
 type EndArgs = [cb?: EndCB] | [chunk: unknown, cb?: EndCB] | [chunk: unknown, enc: BufferEncoding, cb?: EndCB]
@@ -9,6 +9,8 @@ export function resToHttpResponse(res: ServerResponse, headReq = false): HttpRes
   const dres = res as HttpResponse
   dres.sendText = sendText
   dres.sendJson = sendJson
+  dres.redirect = redirect
+  dres.sendUnauthorized = sendUnathorized
   dres.sendNotFound = sendNotFound
   dres.sendServerError = sendServerError
 
