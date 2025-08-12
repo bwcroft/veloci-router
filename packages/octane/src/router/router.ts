@@ -1,20 +1,45 @@
-import http from 'http'
+import http, { IncomingMessage } from 'http'
 import { RouterNode } from './routerNode.js'
 import { resToHttpResponse } from '../decorators/index.js'
-import type { MatchedRoute, RouteContext, RouteHandler, RouteMethod } from '../types/index.js'
+
+import type {
+  HttpResponse,
+  MatchedRoute,
+  NextHandler,
+  RouteConfig,
+  RouteContext,
+  RouteHandler,
+  RouteMethod,
+  RouteMiddleware,
+} from '../types/index.js'
+
+export type RouterPrefix = string
+export type RouterRoot = Map<string, RouterNode>
+
+export interface InitRouter {
+  root?: RouterRoot
+  prefix?: RouterPrefix
+  middleware?: RouteMiddleware[]
+}
+
+type RegisterRoute = (path: string, handler: RouteHandler, config?: RouteConfig) => void
 
 export class Router {
-  private root: Map<string, RouterNode>
+  root: RouterRoot
+  prefix: RouterPrefix
+  middleware: RouteMiddleware[]
 
-  constructor() {
-    this.root = new Map()
+  constructor(src?: InitRouter) {
+    this.root = src?.root || new Map()
+    this.prefix = src?.prefix || ''
+    this.middleware = src?.middleware || []
   }
 
-  #splitPath(path: string) {
+  private splitPath(path: string) {
     return path?.split('/').filter(Boolean)
   }
 
-  #getUrlParamName(segment: string) {
+  private getUrlParamName(segment: string) {
     let paramName: string | undefined
     if (segment.startsWith(':')) {
       paramName = segment.slice(1)
@@ -22,20 +47,21 @@ export class Router {
     return paramName
   }
 
-  #add(method: RouteMethod, path: string, handler: RouteHandler) {
+  private add(method: RouteMethod, path: string, handler: RouteHandler, middleware?: RouteMiddleware[]) {
     if (!this.root.has(method)) {
       this.root.set(method, new RouterNode())
     }
 
-    const segments = this.#splitPath(path)
+    const fullPath = this.prefix ? `${this.prefix}${path}` : path
+    const segments = this.splitPath(fullPath)
     let node = this.root.get(method)
 
     for (const segment of segments) {
-      const paramName = this.#getUrlParamName(segment)
+      const paramName = this.getUrlParamName(segment)
       if (paramName && node) {
         if (node?.paramName && node.paramName !== paramName) {
           throw new Error(
-            `Route conflict: "${path}" has conflicting parameter "${segment}" to another paths parameter "${node.paramName}"`,
+            `Route conflict: "${fullPath}" has conflicting parameter "${segment}" to another paths parameter "${node.paramName}"`,
           )
         } else if (!node.paramName || !node.paramChild) {
           node.paramName = segment.slice(1)
@@ -52,12 +78,13 @@ export class Router {
 
     if (node) {
       node.handler = handler
+      node.middleware = middleware ? [...this.middleware, ...middleware] : this.middleware
     }
   }
 
   match(method: RouteMethod, path: string): MatchedRoute | null {
     try {
-      const segments = this.#splitPath(path)
+      const segments = this.splitPath(path)
       const params: RouteContext['params'] = {}
       let node = this.root.get(method)
 
@@ -80,6 +107,7 @@ export class Router {
       return {
         params,
         handler: node.handler,
+        middleware: node.middleware,
       }
     } catch (e) {
       console.error(e)
@@ -87,7 +115,21 @@ export class Router {
     }
   }
 
-  #createServer() {
+  private async runMiddleware(req: IncomingMessage, res: HttpResponse, ctx: RouteContext, m: RouteMiddleware[]) {
+    let i = 0
+    const next: NextHandler = async (err) => {
+      if (err) {
+        console.error(err)
+        res.sendServerError()
+      }
+      if (i >= m.length) return
+      const exec = m[i++]
+      await exec(req, res, ctx, next)
+    }
+    next()
+  }
+
+  private createServer() {
     return http.createServer(async (req, r) => {
       const res = resToHttpResponse(r, req.method === 'HEAD')
 
@@ -101,11 +143,13 @@ export class Router {
         const route = this.match(req.method as RouteMethod, pathname)
 
         if (route) {
-          await route.handler(req, res, {
+          const ctx = {
             path: pathname,
             params: route.params,
             searchParams,
-          })
+          }
+          await this.runMiddleware(req, res, ctx, route.middleware)
+          await route.handler(req, res, ctx)
         } else {
           res.sendNotFound()
         }
@@ -116,36 +160,58 @@ export class Router {
     })
   }
 
-  get(path: string, handler: RouteHandler) {
-    this.#add('GET', path, handler)
+  group(prefix: string, cb: (router: Router) => void): void
+  group(prefix: string, mw: RouteMiddleware[], cb: (router: Router) => void): void
+  group(prefix: string, arg0: RouteMiddleware[] | ((router: Router) => void), arg1?: (router: Router) => void) {
+    let cb: (router: Router) => void | undefined
+    let mw: RouteMiddleware[] = []
+
+    if (Array.isArray(arg0)) {
+      mw = arg0
+      cb = arg1!
+    } else {
+      cb = arg0
+    }
+
+    const router = new Router({
+      root: this.root,
+      middleware: [...this.middleware, ...mw],
+      prefix: this.prefix ? `${this.prefix}${prefix}` : prefix,
+    })
+    cb(router)
+    this.root = router.root
+  }
+
+  get: RegisterRoute = (path, handler, config) => {
+    this.add('GET', path, handler, config?.middleware)
     this.head(path, handler)
   }
 
-  post(path: string, handler: RouteHandler) {
-    this.#add('POST', path, handler)
+  post: RegisterRoute = (path, handler, config) => {
+    this.add('POST', path, handler, config?.middleware)
   }
 
-  put(path: string, handler: RouteHandler) {
-    this.#add('PUT', path, handler)
+  put: RegisterRoute = (path, handler, config) => {
+    this.add('PUT', path, handler, config?.middleware)
   }
 
-  patch(path: string, handler: RouteHandler) {
-    this.#add('PATCH', path, handler)
+  patch: RegisterRoute = (path, handler, config) => {
+    this.add('PATCH', path, handler, config?.middleware)
   }
 
-  delete(path: string, handler: RouteHandler) {
-    this.#add('DELETE', path, handler)
+  delete: RegisterRoute = (path, handler, config) => {
+    this.add('DELETE', path, handler, config?.middleware)
   }
 
-  head(path: string, handler: RouteHandler) {
-    this.#add('HEAD', path, handler)
+  head: RegisterRoute = (path, handler, config) => {
+    this.add('HEAD', path, handler, config?.middleware)
   }
 
-  options(path: string, handler: RouteHandler) {
-    this.#add('OPTIONS', path, handler)
+  options: RegisterRoute = (path, handler, config) => {
+    this.add('OPTIONS', path, handler, config?.middleware)
   }
 
   listen(port: string, listener?: () => void) {
-    this.#createServer().listen(port, listener)
+    this.createServer().listen(port, listener)
   }
 }

@@ -1,13 +1,11 @@
 import type { HttpResponse } from '../types/index.js'
 
-type SendJsonData = string | Record<string | number | symbol, unknown> | unknown[]
-
 export function sendText(this: HttpResponse, status: number, data: string): void {
   this.writeHead(status, { 'Content-Type': 'text/plain' })
   this.end(data)
 }
 
-export function sendJson(this: HttpResponse, status: number, data: SendJsonData): void {
+export function sendJson(this: HttpResponse, status: number, data: unknown): void {
   this.writeHead(status, { 'Content-Type': 'application/json' })
   this.end(typeof data === 'string' ? data : JSON.stringify(data))
 }
