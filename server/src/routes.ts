@@ -10,13 +10,9 @@ router.get('/speed', getSpeed)
 
 router.group('/users', (r) => {
   r.get('/', getUsers)
-  r.group(
-    '/:id',
-    (ur) => {
-      ur.get('/', getUser)
-    },
-    [getUserMiddleware],
-  )
+  r.group('/:id', [getUserMiddleware], (ur) => {
+    ur.get('/', getUser)
+  })
 })
 
 export default router

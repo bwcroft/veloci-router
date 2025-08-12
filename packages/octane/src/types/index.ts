@@ -1,5 +1,4 @@
 import type { URLSearchParams } from 'url'
-import type { Router } from '../router/router.js'
 import type { IncomingMessage, ServerResponse as ServerResponse } from 'http'
 import type { sendText, sendJson, sendNotFound, sendServerError, sendXml } from '../decorators/resultDecorators.js'
 
@@ -20,7 +19,6 @@ export type RouteHandler<P extends string = string, T extends object = object> =
 ) => void | Promise<void>
 
 export type NextHandler = (err?: string | Error | null) => void | Promise<void>
-
 export type RouteMiddleware<P extends string = string, T extends object = object> = (
   req: IncomingMessage,
   res: HttpResponse,
@@ -30,15 +28,6 @@ export type RouteMiddleware<P extends string = string, T extends object = object
 
 export interface RouteConfig {
   middleware?: RouteMiddleware[]
-}
-
-export type RouteGroupInit = (router: Router) => void
-export interface RouteGroupConfig {
-  middleware?: RouteMiddleware[]
-}
-export type GroupHandler = {
-  (prefix: string, init: RouteGroupInit): void
-  (prefix: string, config: RouteGroupConfig, init: RouteGroupInit): void
 }
 
 export type RouteParmas = Record<string, string>

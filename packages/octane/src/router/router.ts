@@ -8,7 +8,6 @@ import type {
   NextHandler,
   RouteConfig,
   RouteContext,
-  RouteGroupConfig,
   RouteHandler,
   RouteMethod,
   RouteMiddleware,
@@ -161,13 +160,25 @@ export class Router {
     })
   }
 
-  group(prefix: string, init: (router: Router) => void, mw: RouteMiddleware[] = []) {
+  group(prefix: string, cb: (router: Router) => void): void
+  group(prefix: string, mw: RouteMiddleware[], cb: (router: Router) => void): void
+  group(prefix: string, arg0: RouteMiddleware[] | ((router: Router) => void), arg1?: (router: Router) => void) {
+    let cb: (router: Router) => void | undefined
+    let mw: RouteMiddleware[] = []
+
+    if (Array.isArray(arg0)) {
+      mw = arg0
+      cb = arg1!
+    } else {
+      cb = arg0
+    }
+
     const router = new Router({
       root: this.root,
       middleware: [...this.middleware, ...mw],
       prefix: this.prefix ? `${this.prefix}${prefix}` : prefix,
     })
-    init(router)
+    cb(router)
     this.root = router.root
   }
 
