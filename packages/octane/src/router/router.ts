@@ -129,7 +129,7 @@ export class Router {
     next()
   }
 
-  private createServer() {
+  createServer() {
     return http.createServer(async (req, r) => {
       const res = resToHttpResponse(r, req.method === 'HEAD')
 
