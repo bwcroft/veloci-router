@@ -1,17 +1,7 @@
-import http, { IncomingMessage } from 'http'
+import http from 'http'
 import { RouterNode } from './routerNode.js'
-import { resToHttpResponse } from '../decorators/index.js'
-
-import type {
-  HttpResponse,
-  MatchedRoute,
-  NextHandler,
-  RouteConfig,
-  RouteContext,
-  RouteHandler,
-  RouteMethod,
-  RouteMiddleware,
-} from '../types/index.js'
+import { toHttpRequest, HttpRequest } from '../decorators/requestDecorators.js'
+import { toHttpResponse, HttpResponse } from '../decorators/resultDecorators.js'
 
 export type RouterPrefix = string
 export type RouterRoot = Map<string, RouterNode>
@@ -20,6 +10,39 @@ export interface InitRouter {
   root?: RouterRoot
   prefix?: RouterPrefix
   middleware?: RouteMiddleware[]
+}
+
+export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
+
+export type RouteHandler<P extends string = string, T extends object = object, B = unknown> = (
+  req: HttpRequest<B>,
+  res: HttpResponse,
+  ctx: RouteContext<P, T>,
+) => void | Promise<void>
+
+export type NextHandler = (err?: string | Error | null) => void | Promise<void>
+export type RouteMiddleware<P extends string = string, T extends object = object, B = unknown> = (
+  req: HttpRequest<B>,
+  res: HttpResponse,
+  ctx: RouteContext<P, T>,
+  next: NextHandler,
+) => void | Promise<void>
+
+export interface RouteConfig {
+  middleware?: RouteMiddleware[]
+}
+
+export type RouteParmas = Record<string, string>
+export type RouteContext<P extends string = string, T extends object = object> = {
+  path: string
+  params: { [K in P]?: string }
+  searchParams: URLSearchParams
+} & Partial<T>
+
+export interface MatchedRoute<P extends string = string> {
+  handler: RouteHandler<P>
+  middleware: RouteMiddleware<P>[]
+  params: { [K in P]?: string }
 }
 
 type RegisterRoute = (path: string, handler: RouteHandler, config?: RouteConfig) => void
@@ -115,7 +138,7 @@ export class Router {
     }
   }
 
-  private async runMiddleware(req: IncomingMessage, res: HttpResponse, ctx: RouteContext, m: RouteMiddleware[]) {
+  private async runMiddleware(req: HttpRequest, res: HttpResponse, ctx: RouteContext, m: RouteMiddleware[]) {
     let i = 0
     const next: NextHandler = async (err) => {
       if (err) {
@@ -130,8 +153,9 @@ export class Router {
   }
 
   createServer() {
-    return http.createServer(async (req, r) => {
-      const res = resToHttpResponse(r, req.method === 'HEAD')
+    return http.createServer(async (rq, rs) => {
+      const req = toHttpRequest(rq)
+      const res = toHttpResponse(rs, req.method === 'HEAD')
 
       try {
         if (!req.url || typeof req.method !== 'string') {
@@ -148,6 +172,7 @@ export class Router {
             params: route.params,
             searchParams,
           }
+          await req.parseBody()
           await this.runMiddleware(req, res, ctx, route.middleware)
           await route.handler(req, res, ctx)
         } else {

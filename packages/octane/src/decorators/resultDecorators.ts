@@ -1,16 +1,35 @@
-import type { HttpResponse } from '../types/index.js'
+import { ServerResponse } from 'http'
 
-export function sendText(this: HttpResponse, status: number, data: string): void {
+type EndCB = () => void
+type EndArgs = [cb?: EndCB] | [chunk: unknown, cb?: EndCB] | [chunk: unknown, enc: BufferEncoding, cb?: EndCB]
+
+export interface HttpResponse extends ServerResponse {
+  send: typeof send
+  sendText: typeof sendText
+  sendJson: typeof sendJson
+  sendXml: typeof sendXml
+  redirect: typeof redirect
+  sendUnauthorized: typeof sendUnathorized
+  sendNotFound: typeof sendNotFound
+  sendServerError: typeof sendServerError
+}
+
+function send(this: HttpResponse, status: number) {
+  this.statusCode = status
+  this.end()
+}
+
+function sendText(this: HttpResponse, status: number, data: string): void {
   this.writeHead(status, { 'Content-Type': 'text/plain' })
   this.end(data)
 }
 
-export function sendJson(this: HttpResponse, status: number, data: unknown): void {
+function sendJson(this: HttpResponse, status: number, data: unknown): void {
   this.writeHead(status, { 'Content-Type': 'application/json' })
   this.end(typeof data === 'string' ? data : JSON.stringify(data))
 }
 
-export function sendXml(this: HttpResponse, status: number, data: string): void {
+function sendXml(this: HttpResponse, status: number, data: string): void {
   this.writeHead(status, {
     'Content-Type': 'application/xml',
     'Content-Length': Buffer.byteLength(data),
@@ -18,19 +37,66 @@ export function sendXml(this: HttpResponse, status: number, data: string): void 
   this.end(data.trim())
 }
 
-export function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
+function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
   const status = permanent ? 301 : 302
   this.writeHead(status, { Location: url })
 }
 
-export function sendUnathorized(this: HttpResponse, msg: string) {
-  this.sendText(401, msg)
+function sendUnathorized(this: HttpResponse, msg: string) {
+  this.writeHead(401, { 'Content-Type': 'text/plain' })
+  this.end(msg)
 }
 
-export function sendNotFound(this: HttpResponse): void {
-  this.sendJson(404, { error: 'Not found' })
+function sendNotFound(this: HttpResponse): void {
+  this.writeHead(404, { 'Content-Type': 'application/json' })
+  this.end(JSON.stringify({ error: 'Not found' }))
 }
 
-export function sendServerError(this: HttpResponse): void {
-  this.sendJson(500, { error: 'Internal Server Error' })
+function sendServerError(this: HttpResponse): void {
+  this.writeHead(500, { 'Content-Type': 'application/json' })
+  this.end(JSON.stringify({ error: 'Internal Server Error' }))
+}
+
+export function toHttpResponse(res: ServerResponse, headReq = false): HttpResponse {
+  const dres = res as HttpResponse
+  dres.send = send
+  dres.sendText = sendText
+  dres.sendJson = sendJson
+  dres.sendXml = sendXml
+  dres.redirect = redirect
+  dres.sendUnauthorized = sendUnathorized
+  dres.sendNotFound = sendNotFound
+  dres.sendServerError = sendServerError
+
+  /**
+   * Overrides the `write` and `end` methods on the response object for HEAD requests.
+   *
+   * For HEAD requests, no response body should be sent. These overrides ensure that any
+   * calls to `res.write` or `res.end(chunk)` do not send a body, while still preserving
+   * headers and status codes.
+   *
+   * The `end` method also maintains support for Node's overloaded signatures, normalizing
+   * callback and encoding handling.
+   */
+  if (headReq) {
+    const originalEnd = res.end
+    dres.write = () => true
+    dres.end = function end(this: HttpResponse, ...args: EndArgs) {
+      let cb: (() => void) | undefined
+      let encoding: BufferEncoding = 'utf8'
+
+      if (typeof args[0] === 'function') {
+        cb = args[0] as () => void
+      } else if (typeof args[1] === 'function') {
+        cb = args[1] as () => void
+      } else if (typeof args[1] === 'string' && typeof args[2] === 'function') {
+        cb = args[2] as () => void
+        encoding = args[1]
+      }
+
+      return originalEnd.call(this, undefined, encoding, cb) as HttpResponse
+    }
+  }
+
+  return dres
 }

@@ -1,4 +1,4 @@
-import type { RouteHandler, RouteMiddleware } from '../types/index.js'
+import type { RouteHandler, RouteMiddleware } from './router.js'
 
 export class RouterNode {
   paramName: string | null

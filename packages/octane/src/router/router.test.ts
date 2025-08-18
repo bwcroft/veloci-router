@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { describe, it, expect } from 'vitest'
-import { Router } from './router.js'
-import { RouteConfig, RouteHandler, RouteMethod, RouteMiddleware } from '../types/index.js'
+import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware } from './router.js'
+import { allowedBodyMethods } from '../decorators/requestDecorators.js'
 
 type Server = ReturnType<Router['createServer']>
 
@@ -12,7 +12,7 @@ interface RouteNode {
   handler: RouteHandler
   testPath: string
   testKey: 'body' | 'text'
-  testVal: unknown
+  testVal: string | object
   config?: RouteConfig
 }
 
@@ -42,14 +42,69 @@ const routeMap: RouteMap = {
       },
     },
     {
-      path: '/speed',
+      path: '/get',
       method: 'get',
       code: 200,
-      testPath: '/speed',
+      testPath: '/get',
       testKey: 'body',
-      testVal: { speed: 'test' },
+      testVal: { method: 'get' },
       handler: (req, res) => {
-        res.sendJson(200, { speed: 'test' })
+        res.sendJson(200, { method: 'get' })
+      },
+    },
+    {
+      path: '/head',
+      method: 'head',
+      code: 200,
+      testPath: '/head',
+      testKey: 'body',
+      testVal: {},
+      handler: (req, res) => {
+        res.sendJson(200, { method: 'head' })
+      },
+    },
+    {
+      path: '/post',
+      method: 'post',
+      code: 201,
+      testPath: '/post',
+      testKey: 'body',
+      testVal: { method: 'post' },
+      handler: (req, res) => {
+        res.sendJson(201, { method: 'post' })
+      },
+    },
+    {
+      path: '/put',
+      method: 'put',
+      code: 200,
+      testPath: '/put',
+      testKey: 'body',
+      testVal: { method: 'put' },
+      handler: (req, res) => {
+        res.sendJson(200, { method: 'put' })
+      },
+    },
+    {
+      path: '/patch',
+      method: 'patch',
+      code: 200,
+      testPath: '/patch',
+      testKey: 'body',
+      testVal: { method: 'patch' },
+      handler: (req, res) => {
+        res.sendJson(200, { method: 'patch' })
+      },
+    },
+    {
+      path: '/delete',
+      method: 'delete',
+      code: 200,
+      testPath: '/delete',
+      testKey: 'body',
+      testVal: { method: 'delete' },
+      handler: (req, res) => {
+        res.sendJson(200, { method: 'delete' })
       },
     },
   ],
@@ -76,8 +131,76 @@ const routeMap: RouteMap = {
           testKey: 'body',
           testVal: { first: 'bob', last: 'johnson' },
           handler: (req, res) => {
-            res.sendJson(201, {})
+            res.sendJson(201, req.body)
           },
+        },
+      ],
+      groups: [
+        {
+          path: '/:id',
+          routes: [
+            {
+              path: '/',
+              method: 'get',
+              code: 200,
+              testPath: '/users/32',
+              testKey: 'body',
+              testVal: { id: 32, first: 'billy', last: 'bob' },
+              handler: (req, res, ctx) => {
+                const id = Number(ctx.params?.id)
+                if (typeof id === 'number') {
+                  res.sendJson(200, { id, first: 'billy', last: 'bob' })
+                } else {
+                  res.sendServerError()
+                }
+              },
+            },
+            {
+              path: '/',
+              method: 'put',
+              code: 200,
+              testPath: '/users/12',
+              testKey: 'body',
+              testVal: { id: 12, first: 'sam', last: 'bob' },
+              handler: (req, res, ctx) => {
+                const id = Number(ctx.params?.id)
+                const data = typeof req.body === 'object' ? req.body : {}
+                if (typeof id === 'number') {
+                  res.sendJson(200, { ...data, id })
+                } else {
+                  res.sendServerError()
+                }
+              },
+            },
+            {
+              path: '/',
+              method: 'patch',
+              code: 200,
+              testPath: '/users/3948',
+              testKey: 'body',
+              testVal: { id: 3948, first: 'sam', last: 'bob' },
+              handler: (req, res, ctx) => {
+                const id = Number(ctx.params?.id)
+                const data = typeof req.body === 'object' ? req.body : {}
+                if (typeof id === 'number') {
+                  res.sendJson(200, { ...data, id })
+                } else {
+                  res.sendServerError()
+                }
+              },
+            },
+            {
+              path: '/',
+              method: 'delete',
+              code: 200,
+              testPath: '/users/204921',
+              testKey: 'text',
+              testVal: '',
+              handler: (req, res) => {
+                res.send(200)
+              },
+            },
+          ],
         },
       ],
     },
@@ -106,7 +229,7 @@ function makeRouter({ routes, groups }: RouteMap): Router {
   return router
 }
 
-function testRoutes(rotuer: Router, server: Server, routes: RouteNode[]) {
+function testRoutes(server: Server, routes: RouteNode[]) {
   for (const route of routes) {
     it(`Route(${route.method}): ${route.testPath})`, async () => {
       if (route.method === 'get') {
@@ -118,12 +241,25 @@ function testRoutes(rotuer: Router, server: Server, routes: RouteNode[]) {
         expect(getRes[route.testKey]).toEqual(route.testVal)
         expect(headRes.status).toBe(route.code)
         expect(headRes[route.testKey] || {}).toEqual({})
-      } else if (route.method === 'post') {
-        const res = await request(server).post(route.testPath)
+      } else if (route.method === 'head') {
+        const res = await request(server).head(route.testPath)
         expect(res.status).toBe(route.code)
         expect(res[route.testKey]).toEqual(route.testVal)
+      } else if (allowedBodyMethods.has(route.method.toUpperCase())) {
+        const res = await request(server)[route.method](route.testPath).send(route.testVal)
+        expect(res.status).toBe(route.code)
+        expect(res[route.testKey]).toEqual(route.testVal)
+      } else {
+        throw new Error(`Route Method (${route.method}): does not have a test case!`)
       }
     })
+  }
+}
+
+function testGroups(server: Server, groups: RouteGroupNode[]) {
+  for (const group of groups) {
+    testRoutes(server, group.routes)
+    testGroups(server, group?.groups || [])
   }
 }
 
@@ -131,8 +267,17 @@ describe('Router', () => {
   const router = makeRouter(routeMap)
   const server = router.createServer()
 
-  testRoutes(router, server, routeMap.routes)
-  for (const group of routeMap.groups) {
-    testRoutes(router, server, group.routes)
-  }
+  it('404 Not Found', async () => {
+    const res = await request(server).get('/not-found')
+    expect(res.statusCode).toBe(404)
+    expect(res.body).toEqual({ error: 'Not found' })
+  })
+
+  describe('Individual Routes', () => {
+    testRoutes(server, routeMap.routes)
+  })
+
+  describe('Grouped Routes', () => {
+    testGroups(server, routeMap.groups)
+  })
 })
