@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { describe, it, expect } from 'vitest'
-import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware, RouteContext } from './router.js'
 import { allowedBodyMethods } from '../decorators/requestDecorators.js'
+import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware, RouteContext } from './router.js'
 
 type Server = ReturnType<Router['createServer']>
 

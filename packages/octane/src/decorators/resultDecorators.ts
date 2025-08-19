@@ -53,12 +53,12 @@ function sendNotFound(this: HttpResponse): void {
   this.end(JSON.stringify({ error: 'Not found' }))
 }
 
-function sendServerError(this: HttpResponse): void {
+function sendServerError(this: HttpResponse, msg = 'Internal Server Error'): void {
   this.writeHead(500, { 'Content-Type': 'application/json' })
-  this.end(JSON.stringify({ error: 'Internal Server Error' }))
+  this.end(JSON.stringify({ error: msg }))
 }
 
-export function toHttpResponse(res: ServerResponse, headReq = false): HttpResponse {
+export function toHttpResponse(res: ServerResponse, isHead = false): HttpResponse {
   const dres = res as HttpResponse
   dres.send = send
   dres.sendText = sendText
@@ -79,7 +79,7 @@ export function toHttpResponse(res: ServerResponse, headReq = false): HttpRespon
    * The `end` method also maintains support for Node's overloaded signatures, normalizing
    * callback and encoding handling.
    */
-  if (headReq) {
+  if (isHead) {
     const originalEnd = res.end
     dres.write = () => true
     dres.end = function end(this: HttpResponse, ...args: EndArgs) {
