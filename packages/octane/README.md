@@ -1,10 +1,11 @@
-<div align="center" style="margin-bottom: 30px;"> 
+<div align="center"> 
   <img 
-    src="./images/octane-logo.jpg" 
+    src="./images/octane-logo-round-250x250.png" 
     width="250" 
-    style="border-radius: 50%;"
   >
 </div>
+<br>
+<br>
 
 **Octane** is a blazing-fast, lightweight, and fully type-safe routing library for modern JavaScript and TypeScript applications. Designed with performance and simplicity in mind, Octane gives you the power of an expressive API without the overhead of large frameworks.  
 
