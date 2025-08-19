@@ -1,18 +1,16 @@
 import http from 'http'
 import { RouterNode } from './routerNode.js'
+import type { RouteMethod } from '../types.js'
 import { toHttpRequest, HttpRequest } from '../decorators/requestDecorators.js'
 import { toHttpResponse, HttpResponse } from '../decorators/resultDecorators.js'
 
 export type RouterPrefix = string
-export type RouterRoot = Map<string, RouterNode>
 
 export interface InitRouter {
-  root?: RouterRoot
+  root?: RouterNode
   prefix?: RouterPrefix
   middleware?: RouteMiddleware[]
 }
-
-export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
 
 export type RouteHandler<P extends string = string, T extends object = object, B = unknown> = (
   req: HttpRequest<B>,
@@ -39,21 +37,15 @@ export type RouteContext<P extends string = string, T extends object = object> =
   searchParams: URLSearchParams
 } & Partial<T>
 
-export interface MatchedRoute<P extends string = string> {
-  handler: RouteHandler<P>
-  middleware: RouteMiddleware<P>[]
-  params: { [K in P]?: string }
-}
-
 type RegisterRoute = (path: string, handler: RouteHandler, config?: RouteConfig) => void
 
 export class Router {
-  root: RouterRoot
+  root: RouterNode
   prefix: RouterPrefix
   middleware: RouteMiddleware[]
 
   constructor(src?: InitRouter) {
-    this.root = src?.root || new Map()
+    this.root = src?.root || new RouterNode()
     this.prefix = src?.prefix || ''
     this.middleware = src?.middleware || []
   }
@@ -70,14 +62,10 @@ export class Router {
     return paramName
   }
 
-  private add(method: RouteMethod, path: string, handler: RouteHandler, middleware?: RouteMiddleware[]) {
-    if (!this.root.has(method)) {
-      this.root.set(method, new RouterNode())
-    }
-
+  private add(method: RouteMethod, path: string, handler: RouteHandler, middleware: RouteMiddleware[] = []) {
     const fullPath = this.prefix ? `${this.prefix}${path}` : path
     const segments = this.splitPath(fullPath)
-    let node = this.root.get(method)
+    let node: RouterNode | undefined = this.root
 
     for (const segment of segments) {
       const paramName = this.getUrlParamName(segment)
@@ -99,17 +87,21 @@ export class Router {
       }
     }
 
-    if (node) {
-      node.handler = handler
-      node.middleware = middleware ? [...this.middleware, ...middleware] : this.middleware
+    if (!node) return
+
+    const handlers = [...this.middleware, ...middleware, handler]
+    if (!node.handlers) {
+      node.handlers = new Map([[method, handlers]])
+    } else {
+      node.handlers.set(method, handlers)
     }
   }
 
-  match(method: RouteMethod, path: string): MatchedRoute | null {
+  match(path: string) {
     try {
       const segments = this.splitPath(path)
       const params: RouteContext['params'] = {}
-      let node = this.root.get(method)
+      let node: RouterNode | undefined = this.root
 
       if (node) {
         for (const segment of segments) {
@@ -126,11 +118,13 @@ export class Router {
         }
       }
 
-      if (!node || !node.handler) return null
+      if (!node || !node.handlers) {
+        return null
+      }
+
       return {
+        node,
         params,
-        handler: node.handler,
-        middleware: node.middleware,
       }
     } catch (e) {
       console.error(e)
@@ -172,16 +166,19 @@ export class Router {
         }
 
         const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host}`)
-        const route = this.match(req.method as RouteMethod, pathname)
+        const { node, params } = this.match(pathname) || {}
+        const handlers = node?.handlers?.get(req.method as RouteMethod)
 
-        if (route) {
+        if (node && handlers) {
           const ctx = {
             path: pathname,
-            params: route.params,
+            params: params || {},
             searchParams,
           }
           await req.parseBody()
-          await this.execute(req, res, ctx, [...route.middleware, route.handler])
+          await this.execute(req, res, ctx, handlers)
+        } else if (node && node.handlers) {
+          res.sendMethodNotAllowed(Array.from(node.handlers.keys()))
         } else {
           res.sendNotFound()
         }

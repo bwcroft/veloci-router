@@ -1,7 +1,8 @@
 import request from 'supertest'
+import type { RouteMethod } from '../types.js'
 import { describe, it, expect } from 'vitest'
 import { allowedBodyMethods } from '../decorators/requestDecorators.js'
-import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware, RouteContext } from './router.js'
+import { Router, RouteConfig, RouteHandler, RouteMiddleware, RouteContext } from './router.js'
 
 type Server = ReturnType<Router['createServer']>
 
@@ -360,6 +361,13 @@ describe('Router', () => {
     const res = await request(server).get('/not-found')
     expect(res.statusCode).toBe(404)
     expect(res.body).toEqual({ error: 'Not found' })
+  })
+
+  it('Method Not Found', async () => {
+    const route = routeMap.routes[0]
+    const res = await request(server).delete(route.testPath)
+    expect(res.statusCode).toBe(405)
+    expect(res.header?.allow).toEqual('GET, HEAD')
   })
 
   describe('Individual Routes', () => {
