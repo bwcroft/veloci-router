@@ -13,6 +13,8 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest --run",
+    "test:watch": "vitest",
     "build": "tsc --build",
     "server": "pnpm run build && node ./server/dist/server.js",
     "preinstall": "npx only-allow pnpm"
@@ -20,12 +22,15 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@types/node": "24.1.0",
+    "@types/supertest": "^6.0.3",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "globals": "^16.3.0",
     "prettier": "3.6.2",
+    "supertest": "^7.1.4",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
   }
 }
