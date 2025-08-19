@@ -28,6 +28,12 @@ interface RouteMap {
   groups: RouteGroupNode[]
 }
 
+type RootMiddlwareCtx = { root: true }
+const rootMiddlware: RouteMiddleware<string, RootMiddlwareCtx> = (req, res, ctx, next) => {
+  ctx.root = true
+  next()
+}
+
 type AuthMiddlewareCtx = { authorized: boolean }
 const authMiddleware: RouteMiddleware<string, AuthMiddlewareCtx> = (req, res, ctx, next) => {
   if (ctx.searchParams.get('trustme') !== 'true') {
@@ -160,6 +166,17 @@ const routeMap: RouteMap = {
         middleware: [authMiddleware],
       },
     },
+    {
+      path: '/root-middlware',
+      method: 'get',
+      code: 200,
+      testPath: '/root-middlware',
+      testKey: 'body',
+      testVal: { root: true },
+      handler: (_, res, ctx: RouteContext<string, RootMiddlwareCtx>) => {
+        res.sendJson(200, { root: ctx?.root })
+      },
+    },
   ],
   groups: [
     {
@@ -191,12 +208,13 @@ const routeMap: RouteMap = {
       groups: [
         {
           path: '/:id',
+          middleware: [authMiddleware],
           routes: [
             {
               path: '/',
               method: 'get',
               code: 200,
-              testPath: '/users/32',
+              testPath: '/users/32?trustme=true',
               testKey: 'body',
               testVal: { id: 32, first: 'billy', last: 'bob' },
               handler: (req, res, ctx) => {
@@ -212,7 +230,7 @@ const routeMap: RouteMap = {
               path: '/',
               method: 'put',
               code: 200,
-              testPath: '/users/12',
+              testPath: '/users/12?trustme=true',
               testKey: 'body',
               testVal: { id: 12, first: 'sam', last: 'bob' },
               handler: (req, res, ctx) => {
@@ -229,7 +247,7 @@ const routeMap: RouteMap = {
               path: '/',
               method: 'patch',
               code: 200,
-              testPath: '/users/3948',
+              testPath: '/users/3948?trustme=true',
               testKey: 'body',
               testVal: { id: 3948, first: 'sam', last: 'bob' },
               handler: (req, res, ctx) => {
@@ -246,7 +264,7 @@ const routeMap: RouteMap = {
               path: '/',
               method: 'delete',
               code: 200,
-              testPath: '/users/204921',
+              testPath: '/users/204921?trustme=true',
               testKey: 'text',
               testVal: '',
               handler: (req, res) => {
@@ -276,15 +294,17 @@ function makeRouteGroup(router: Router, groups: RouteGroupNode[]) {
 }
 
 function makeRouter({ routes, groups }: RouteMap): Router {
-  const router = new Router()
+  const router = new Router({
+    middleware: [rootMiddlware],
+  })
   makeRoutes(router, routes)
   makeRouteGroup(router, groups)
   return router
 }
 
-function testRoutes(server: Server, routes: RouteNode[]) {
+function testRoutes(server: Server, routes: RouteNode[], prefix: string = '') {
   for (const route of routes) {
-    it(`Route(${route.method}): ${route.testPath})`, async () => {
+    it(`Route(${route.method}): ${prefix}${route.path})`, async () => {
       if (route.method === 'get') {
         const [getRes, headRes] = await Promise.all([
           request(server).get(route.testPath),
@@ -310,10 +330,11 @@ function testRoutes(server: Server, routes: RouteNode[]) {
   }
 }
 
-function testGroups(server: Server, groups: RouteGroupNode[]) {
+function testGroups(server: Server, groups: RouteGroupNode[], prefix: string = '') {
   for (const group of groups) {
-    testRoutes(server, group.routes)
-    testGroups(server, group?.groups || [])
+    const newPrefix = `${prefix}${group.path}`
+    testRoutes(server, group.routes, newPrefix)
+    testGroups(server, group?.groups || [], newPrefix)
   }
 }
 
