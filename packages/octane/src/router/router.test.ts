@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { describe, it, expect } from 'vitest'
-import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware } from './router.js'
+import { Router, RouteConfig, RouteHandler, RouteMethod, RouteMiddleware, RouteContext } from './router.js'
 import { allowedBodyMethods } from '../decorators/requestDecorators.js'
 
 type Server = ReturnType<Router['createServer']>
@@ -26,6 +26,16 @@ interface RouteGroupNode {
 interface RouteMap {
   routes: RouteNode[]
   groups: RouteGroupNode[]
+}
+
+type AuthMiddlewareCtx = { authorized: boolean }
+const authMiddleware: RouteMiddleware<string, AuthMiddlewareCtx> = (req, res, ctx, next) => {
+  if (ctx.searchParams.get('trustme') !== 'true') {
+    res.sendUnauthorized('Unauthorized')
+  } else {
+    ctx.authorized = true
+  }
+  next()
 }
 
 const routeMap: RouteMap = {
@@ -105,6 +115,49 @@ const routeMap: RouteMap = {
       testVal: { method: 'delete' },
       handler: (req, res) => {
         res.sendJson(200, { method: 'delete' })
+      },
+    },
+    {
+      path: '/redirect',
+      method: 'get',
+      code: 301,
+      testPath: '/redirect',
+      testKey: 'text',
+      testVal: '',
+      handler: (req, res) => {
+        res.redirect('/redirected')
+      },
+    },
+    {
+      path: '/unauthorized',
+      method: 'get',
+      code: 401,
+      testPath: '/unauthorized',
+      testKey: 'text',
+      testVal: 'Unauthorized',
+      handler: (_, res) => {
+        res.send(300)
+      },
+      config: {
+        middleware: [authMiddleware],
+      },
+    },
+    {
+      path: '/authorized',
+      method: 'get',
+      code: 200,
+      testPath: '/authorized?trustme=true',
+      testKey: 'text',
+      testVal: 'Authorized',
+      handler: (_, res, ctx: RouteContext<string, AuthMiddlewareCtx>) => {
+        if (ctx?.authorized) {
+          res.sendText(200, 'Authorized')
+        } else {
+          res.sendServerError()
+        }
+      },
+      config: {
+        middleware: [authMiddleware],
       },
     },
   ],
@@ -240,7 +293,8 @@ function testRoutes(server: Server, routes: RouteNode[]) {
         expect(getRes.status).toBe(route.code)
         expect(getRes[route.testKey]).toEqual(route.testVal)
         expect(headRes.status).toBe(route.code)
-        expect(headRes[route.testKey] || {}).toEqual({})
+        expect(headRes.body).toEqual({})
+        expect(headRes.text).toBeUndefined()
       } else if (route.method === 'head') {
         const res = await request(server).head(route.testPath)
         expect(res.status).toBe(route.code)

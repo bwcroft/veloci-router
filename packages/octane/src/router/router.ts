@@ -138,18 +138,26 @@ export class Router {
     }
   }
 
-  private async runMiddleware(req: HttpRequest, res: HttpResponse, ctx: RouteContext, m: RouteMiddleware[]) {
+  private async execute(req: HttpRequest, res: HttpResponse, ctx: RouteContext, m: (RouteMiddleware | RouteHandler)[]) {
     let i = 0
     const next: NextHandler = async (err) => {
+      if (res.writableEnded) return
+
       if (err) {
         console.error(err)
         res.sendServerError()
+        return
       }
+
       if (i >= m.length) return
       const exec = m[i++]
-      await exec(req, res, ctx, next)
+      try {
+        await exec(req, res, ctx, next)
+      } catch (e) {
+        await next(e as Error)
+      }
     }
-    next()
+    await next()
   }
 
   createServer() {
@@ -173,8 +181,7 @@ export class Router {
             searchParams,
           }
           await req.parseBody()
-          await this.runMiddleware(req, res, ctx, route.middleware)
-          await route.handler(req, res, ctx)
+          await this.execute(req, res, ctx, [...route.middleware, route.handler])
         } else {
           res.sendNotFound()
         }
@@ -209,7 +216,7 @@ export class Router {
 
   get: RegisterRoute = (path, handler, config) => {
     this.add('GET', path, handler, config?.middleware)
-    this.head(path, handler)
+    this.head(path, handler, config)
   }
 
   post: RegisterRoute = (path, handler, config) => {

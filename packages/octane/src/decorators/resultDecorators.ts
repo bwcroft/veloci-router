@@ -9,7 +9,7 @@ export interface HttpResponse extends ServerResponse {
   sendJson: typeof sendJson
   sendXml: typeof sendXml
   redirect: typeof redirect
-  sendUnauthorized: typeof sendUnathorized
+  sendUnauthorized: typeof sendUnauthorized
   sendNotFound: typeof sendNotFound
   sendServerError: typeof sendServerError
 }
@@ -40,9 +40,10 @@ function sendXml(this: HttpResponse, status: number, data: string): void {
 function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
   const status = permanent ? 301 : 302
   this.writeHead(status, { Location: url })
+  this.end()
 }
 
-function sendUnathorized(this: HttpResponse, msg: string) {
+function sendUnauthorized(this: HttpResponse, msg: string) {
   this.writeHead(401, { 'Content-Type': 'text/plain' })
   this.end(msg)
 }
@@ -64,7 +65,7 @@ export function toHttpResponse(res: ServerResponse, headReq = false): HttpRespon
   dres.sendJson = sendJson
   dres.sendXml = sendXml
   dres.redirect = redirect
-  dres.sendUnauthorized = sendUnathorized
+  dres.sendUnauthorized = sendUnauthorized
   dres.sendNotFound = sendNotFound
   dres.sendServerError = sendServerError
 
