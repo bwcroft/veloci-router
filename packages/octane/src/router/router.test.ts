@@ -177,6 +177,20 @@ const routeMap: RouteMap = {
         res.sendJson(200, { root: ctx?.root })
       },
     },
+    {
+      path: '/async-handler',
+      method: 'post',
+      code: 200,
+      testPath: '/async-handler',
+      testKey: 'body',
+      testVal: { success: true },
+      handler: async (_, res) => {
+        const success = await new Promise((resolve) => {
+          setTimeout(() => resolve(true), 150)
+        })
+        res.sendJson(200, { success })
+      },
+    },
   ],
   groups: [
     {

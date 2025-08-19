@@ -5,7 +5,6 @@
   >
 </div>
 <br>
-<br>
 
 **Octane** is a blazing-fast, lightweight, and fully type-safe routing library for modern JavaScript and TypeScript applications. Designed with performance and simplicity in mind, Octane gives you the power of an expressive API without the overhead of large frameworks.  
 
@@ -33,10 +32,11 @@ yarn add @bwcroft/octane
 ```
 
 ## Example Usage
- This snippet demonstrates a basic usage of the `Router`. 
- It creates a new router instance, defines a `GET` route at the root path (`/`) that responds with "Hello World", and 
- then starts the server on port `3000`, logging the server URL to the console once it’s running.
-   
+  This snippet demonstrates a basic usage of the Router. It creates a new router instance, defines a GET 
+  route at the root path (/) that responds with "Hello World", and then starts the server on port 3000,
+  logging the server URL once it’s running. The Router supports all standard HTTP methods, 
+  including GET, POST, PUT, PATCH, DELETE, HEAD, and OPTIONS. 
+
 ```ts
 import { Router } from '@bwcroft/octane'
 
@@ -97,7 +97,7 @@ You can attach middleware to individual routes using the `middleware` option. Th
 ```ts
 const authMiddleware = (req, res, ctx, next) => {
   if (!ctx.user) {
-    return res.sendJson(401, { error: "Unauthorized" })
+    return res.sendUnauthorized()
   }
   next()
 }
@@ -129,7 +129,7 @@ You can attach middleware to a route group so that it runs for all routes within
 ```ts
 const authMiddleware = (req, res, ctx, next) => {
   if (!ctx.user) {
-    return res.sendJson(401, { error: "Unauthorized" })
+    return res.sendUnauthorized()
   }
   next()
 }
