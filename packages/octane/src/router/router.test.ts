@@ -333,7 +333,7 @@ function testRoutes(server: Server, routes: RouteNode[], prefix: string = '') {
         const res = await request(server).head(route.testPath)
         expect(res.status).toBe(route.code)
         expect(res[route.testKey]).toEqual(route.testVal)
-      } else if (allowedBodyMethods.has(route.method.toUpperCase())) {
+      } else if (allowedBodyMethods.has(route.method.toUpperCase() as RouteMethod)) {
         const res = await request(server)[route.method](route.testPath).send(route.testVal)
         expect(res.status).toBe(route.code)
         expect(res[route.testKey]).toEqual(route.testVal)

@@ -1,7 +1,9 @@
 import type { IncomingMessage } from 'http'
 import querystring from 'node:querystring'
+import type { RouteMethod } from '../router/router.js'
 
 export interface HttpRequest<B = unknown> extends IncomingMessage {
+  method: RouteMethod | undefined
   parseBody: typeof parseBody
   body: B
 }
@@ -10,7 +12,7 @@ export interface ParseBodyParams {
   limit?: number
 }
 
-export const allowedBodyMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+export const allowedBodyMethods = new Set<RouteMethod>(['POST', 'PUT', 'PATCH', 'DELETE'] as const)
 
 async function parseBody(this: HttpRequest, opts?: ParseBodyParams): Promise<unknown> {
   if (!this?.method || !allowedBodyMethods.has(this.method)) {
