@@ -1,9 +1,9 @@
 import http from 'http'
 import { RouterNode } from './routerNode.js'
-import type { RouteMethod } from '../types.js'
 import { toHttpRequest, HttpRequest } from '../decorators/requestDecorators.js'
 import { toHttpResponse, HttpResponse } from '../decorators/resultDecorators.js'
 
+export type RouteMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'OPTIONS' | 'HEAD'
 export type RouterPrefix = string
 
 export interface InitRouter {
@@ -88,13 +88,7 @@ export class Router {
     }
 
     if (!node) return
-
-    const handlers = [...this.middleware, ...middleware, handler]
-    if (!node.handlers) {
-      node.handlers = new Map([[method, handlers]])
-    } else {
-      node.handlers.set(method, handlers)
-    }
+    node.handlers.set(method, [...this.middleware, ...middleware, handler])
   }
 
   match(path: string) {
@@ -118,7 +112,7 @@ export class Router {
         }
       }
 
-      if (!node || !node.handlers) {
+      if (!node || !node.handlers.size) {
         return null
       }
 
@@ -156,8 +150,9 @@ export class Router {
 
   createServer() {
     return http.createServer(async (rq, rs) => {
+      const method = rq.method as RouteMethod
       const req = toHttpRequest(rq)
-      const res = toHttpResponse(rs, req.method === 'HEAD')
+      const res = toHttpResponse(rs, method === 'HEAD')
 
       try {
         if (!req.url || typeof req.method !== 'string') {
@@ -167,7 +162,8 @@ export class Router {
 
         const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host}`)
         const { node, params } = this.match(pathname) || {}
-        const handlers = node?.handlers?.get(req.method as RouteMethod)
+        const hasHandlers = !!node?.handlers.size
+        const handlers = node?.getHandlers(method)
 
         if (node && handlers) {
           const ctx = {
@@ -177,8 +173,10 @@ export class Router {
           }
           await req.parseBody()
           await this.execute(req, res, ctx, handlers)
-        } else if (node && node.handlers) {
-          res.sendMethodNotAllowed(Array.from(node.handlers.keys()))
+        } else if (method === 'OPTIONS' && hasHandlers) {
+          res.sendOptions(node.getOptions())
+        } else if (node?.handlers?.size) {
+          res.sendMethodNotAllowed(node.getOptions())
         } else {
           res.sendNotFound()
         }
@@ -213,7 +211,6 @@ export class Router {
 
   get: RegisterRoute = (path, handler, config) => {
     this.add('GET', path, handler, config?.middleware)
-    this.head(path, handler, config)
   }
 
   post: RegisterRoute = (path, handler, config) => {

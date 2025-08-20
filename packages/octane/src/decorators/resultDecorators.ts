@@ -1,5 +1,5 @@
-import { ServerResponse } from 'http'
-import { RouteMethod } from '../types.js'
+import type { ServerResponse } from 'http'
+import type { RouteMethod } from '../router/router.js'
 
 type EndCB = () => void
 type EndArgs = [cb?: EndCB] | [chunk: unknown, cb?: EndCB] | [chunk: unknown, enc: BufferEncoding, cb?: EndCB]
@@ -10,6 +10,7 @@ export interface HttpResponse extends ServerResponse {
   sendJson: typeof sendJson
   sendXml: typeof sendXml
   redirect: typeof redirect
+  sendOptions: typeof sendOptions
   sendUnauthorized: typeof sendUnauthorized
   sendMethodNotAllowed: typeof sendMethodNotAllowed
   sendNotFound: typeof sendNotFound
@@ -45,6 +46,11 @@ function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
   this.end()
 }
 
+function sendOptions(this: HttpResponse, methods: RouteMethod[] | string) {
+  this.writeHead(204, { Allow: Array.isArray(methods) ? methods.join(', ') : methods })
+  this.end()
+}
+
 function sendUnauthorized(this: HttpResponse, msg: string) {
   this.writeHead(401, { 'Content-Type': 'text/plain' })
   this.end(msg)
@@ -72,6 +78,7 @@ export function toHttpResponse(res: ServerResponse, isHead = false): HttpRespons
   dres.sendJson = sendJson
   dres.sendXml = sendXml
   dres.redirect = redirect
+  dres.sendOptions = sendOptions
   dres.sendUnauthorized = sendUnauthorized
   dres.sendMethodNotAllowed = sendMethodNotAllowed
   dres.sendNotFound = sendNotFound

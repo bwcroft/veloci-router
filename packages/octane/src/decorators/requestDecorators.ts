@@ -1,4 +1,4 @@
-import { IncomingMessage } from 'http'
+import type { IncomingMessage } from 'http'
 import querystring from 'node:querystring'
 
 export interface HttpRequest<B = unknown> extends IncomingMessage {

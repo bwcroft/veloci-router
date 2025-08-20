@@ -1,8 +1,7 @@
 import request from 'supertest'
-import type { RouteMethod } from '../types.js'
 import { describe, it, expect } from 'vitest'
 import { allowedBodyMethods } from '../decorators/requestDecorators.js'
-import { Router, RouteConfig, RouteHandler, RouteMiddleware, RouteContext } from './router.js'
+import { Router, RouteMethod, RouteConfig, RouteHandler, RouteMiddleware, RouteContext } from './router.js'
 
 type Server = ReturnType<Router['createServer']>
 
@@ -364,10 +363,17 @@ describe('Router', () => {
   })
 
   it('Method Not Found', async () => {
-    const route = routeMap.routes[0]
-    const res = await request(server).delete(route.testPath)
+    const path = routeMap.routes[0]?.testPath
+    const res = await request(server).delete(path)
     expect(res.statusCode).toBe(405)
-    expect(res.header?.allow).toEqual('GET, HEAD')
+    expect(res.header?.allow).toEqual('GET, HEAD, OPTIONS')
+  })
+
+  it('Auto Generate Options', async () => {
+    const path = routeMap.groups[0]?.path
+    const res = await request(server).options(path)
+    expect(res.statusCode).toBe(204)
+    expect(res.header?.allow).toEqual('GET, POST, HEAD, OPTIONS')
   })
 
   describe('Individual Routes', () => {
