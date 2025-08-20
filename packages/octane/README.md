@@ -1,8 +1,5 @@
 <div align="center"> 
-  <img 
-    src="./images/octane-logo-round-250x250.png" 
-    width="250" 
-  >
+  <img src="https://raw.githubusercontent.com/bwcroft/nodejs-toolkit/refs/heads/main/packages/octane/images/octane-logo-round-250x250.png">
 </div>
 <br>
 
