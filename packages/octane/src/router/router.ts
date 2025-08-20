@@ -80,10 +80,10 @@ export class Router {
         }
         node = node.paramChild
       } else {
-        if (!node?.children.has(segment)) {
-          node?.children.set(segment, new RouterNode())
+        if (!node?.children?.has(segment)) {
+          node?.children?.set(segment, new RouterNode())
         }
-        node = node?.children.get(segment)
+        node = node?.children?.get(segment)
       }
     }
 

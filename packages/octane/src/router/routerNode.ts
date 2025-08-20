@@ -1,20 +1,32 @@
 import { RouteMethod } from './router.js'
 import type { RouteHandler, RouteMiddleware } from './router.js'
 
-export class RouterNode {
-  paramName: string | null
-  paramChild: RouterNode | null
-  children: Map<string, RouterNode>
-  handlers: Map<RouteMethod, (RouteMiddleware | RouteHandler)[]>
+export type RouteNodeParamName = string | null
+export type RouteNodeParamChild = RouterNode | null
+export type RouteNodeChildren = Map<string, RouterNode>
+export type RouteNodeHandlers = Map<RouteMethod, (RouteMiddleware | RouteHandler)[]>
 
-  constructor() {
-    this.paramName = null
-    this.paramChild = null
-    this.children = new Map()
-    this.handlers = new Map()
+export interface RouterNodeInit {
+  paramName?: RouteNodeParamName
+  paramChild?: RouteNodeParamChild
+  children?: RouteNodeChildren
+  handlers?: RouteNodeHandlers
+}
+
+export class RouterNode {
+  handlers: RouteNodeHandlers
+  paramName: RouteNodeParamName
+  paramChild: RouteNodeParamChild
+  children: RouteNodeChildren
+
+  constructor(src?: RouterNodeInit) {
+    this.paramName = src?.paramName || null
+    this.paramChild = src?.paramChild || null
+    this.children = src?.children || new Map()
+    this.handlers = src?.handlers || new Map()
   }
 
-  getHandlers(method: RouteMethod) {
+  getHandlers(method: RouteMethod): (RouteMiddleware | RouteHandler)[] | undefined {
     let handlers = this.handlers.get(method)
     if (!handlers && method === 'HEAD') {
       handlers = this.handlers.get('GET')
@@ -22,7 +34,7 @@ export class RouterNode {
     return handlers
   }
 
-  getOptions() {
+  getOptions(): RouteMethod[] {
     const result: RouteMethod[] = []
     let hasGet = false
     let hasHead = false
@@ -38,7 +50,6 @@ export class RouterNode {
     if (hasGet && !hasHead) {
       result.push('HEAD')
     }
-
     if (!hasOptions) {
       result.push('OPTIONS')
     }
