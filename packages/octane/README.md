@@ -40,7 +40,7 @@ import { Router } from '@bwcroft/octane'
 const router = new Router()
 
 router.get('/', (req, res) => {
-  res.sendText('Hello World')
+  res.send('Hello World')
 })
 
 const port = '3000'
@@ -57,11 +57,11 @@ a colon (`:`). These values are automatically extracted and made available on `c
 
 ```ts
 router.get("/users/:id", (req, res, ctx) => {
-  res.sendJson(200, { id: ctx.params?.id })
+  res.send({ id: ctx.params?.id })
 }) 
 
 router.get("/users/:id/addresses/:addressId", (req, res, ctx) => {
-  res.sendJson(200, { 
+  res.send({ 
     id: ctx.params?.id,
     addressId: ctx.params?.addressId
   })
@@ -80,7 +80,7 @@ router.get("/users", (req, res, ctx) => {
   const active = ctx.searchParams?.get("active") // get the "active" query parameter
   const sort = ctx.searchParams?.get("sort")     // get the "sort" query parameter
 
-  res.sendJson(200, { 
+  res.send({ 
     active,
     sort
   })
@@ -94,13 +94,13 @@ You can attach middleware to individual routes using the `middleware` option. Th
 ```ts
 const authMiddleware = (req, res, ctx, next) => {
   if (!ctx.user) {
-    return res.sendUnauthorized()
+    return res.unauthorized()
   }
   next()
 }
 
 router.get("/", (req, res, ctx) => {
-  res.sendJson(200, { message: "Hello, authorized user!" })
+  res.send({ message: "Hello, authorized user!" })
 }, { middleware: [authMiddleware] })
 ```
 
@@ -111,11 +111,11 @@ Route groups allow you to organize multiple routes under a common path prefix.
 ```ts
 router.group("/users", (r) => {
   r.get("/", (req, res, ctx) => {
-    res.sendJson(200, [])
+    res.send([])
   })
 
   r.get("/:id", (req, res, ctx) => {
-    res.sendJson(200, { id: ctx.params?.id })
+    res.send({ id: ctx.params?.id })
   })
 })
 ```
@@ -126,17 +126,65 @@ You can attach middleware to a route group so that it runs for all routes within
 ```ts
 const authMiddleware = (req, res, ctx, next) => {
   if (!ctx.user) {
-    return res.sendUnauthorized()
+    return res.unauthorized()
   }
   next()
 }
 
 router.group("/users", [authMiddleware], (r) => {
   r.get("/", (req, res, ctx) => {
-    res.sendJson(200, { message: "List all users" })
+    res.send({ message: "List all users" })
   })
 
   r.get("/:id", (req, res, ctx) => {
-    res.sendJson(200, { userId: ctx.params?.id })
+    res.send({ userId: ctx.params?.id })
   })
 })
+```
+
+### HttpResponse Decorators
+
+Octane extends Node's `ServerResponse`, offering convenient helpers for sending responses, managing status codes, setting
+content types, and handling common HTTP patterns.
+
+```ts
+// Set the response status code
+res.code(201)
+
+// Set the Content-Type header
+res.type('application/json')
+
+// Send a response body; automatically detects type
+res.send({ message: 'ok' })          // Content-Type: application/json
+res.send('Hello world')              // Content-Type: text/plain
+res.send(Buffer.from('binary data')) // Content-Type: application/octet-stream
+```
+
+Send only a status code with an empty body:
+```ts
+res.code(201).send()
+```
+
+Prevent send() from auto-setting Content-Type:
+```ts
+res.type('text/plain').send({})
+```
+
+Set both status code and Content-Type:
+```ts
+res.code(201).type('text/plain').send()
+```
+
+Handling Redirects:
+```ts
+res.redirect('/login')           // Defaults to status code 301
+res.redirect('/new-page', false) // Sets status code to 302 
+```
+
+Convenience helpers for common status codes:
+```ts
+res.unauthorized()      // 401 Unauthorized
+res.methodNotAllowed()  // 405 Method Not Allowed
+res.notFound()          // 404 Not Found
+res.serverError()       // 500 Internal Server Error
+```
