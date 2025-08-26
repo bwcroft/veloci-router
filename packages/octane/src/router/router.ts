@@ -145,7 +145,7 @@ export class Router {
 
       if (err) {
         console.error(err)
-        res.sendServerError()
+        res.serverError()
         return
       }
 
@@ -168,7 +168,7 @@ export class Router {
 
       try {
         if (!req.url || typeof req.method !== 'string') {
-          res.sendNotFound()
+          res.notFound()
           return
         }
 
@@ -186,15 +186,15 @@ export class Router {
           await req.parseBody()
           await this.execute(req, res, ctx, handlers)
         } else if (method === 'OPTIONS' && hasHandlers) {
-          res.sendOptions(node.getOptions())
+          res.options(node.getOptions())
         } else if (node?.handlers?.size) {
-          res.sendMethodNotAllowed(node.getOptions())
+          res.methodNotAllowed(node.getOptions())
         } else {
-          res.sendNotFound()
+          res.notFound()
         }
       } catch (err) {
         console.error('Handler error:', err)
-        res.sendServerError()
+        res.serverError()
       }
     })
   }

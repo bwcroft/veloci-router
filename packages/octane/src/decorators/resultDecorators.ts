@@ -1,43 +1,47 @@
-import type { ServerResponse } from 'http'
+import { type ServerResponse } from 'http'
 import type { RouteMethod } from '../router/router.js'
 
 type EndCB = () => void
 type EndArgs = [cb?: EndCB] | [chunk: unknown, cb?: EndCB] | [chunk: unknown, enc: BufferEncoding, cb?: EndCB]
 
 export interface HttpResponse extends ServerResponse {
+  code: typeof code
+  type: typeof type
   send: typeof send
-  sendText: typeof sendText
-  sendJson: typeof sendJson
-  sendXml: typeof sendXml
   redirect: typeof redirect
-  sendOptions: typeof sendOptions
-  sendUnauthorized: typeof sendUnauthorized
-  sendMethodNotAllowed: typeof sendMethodNotAllowed
-  sendNotFound: typeof sendNotFound
-  sendServerError: typeof sendServerError
+  options: typeof options
+  unauthorized: typeof unauthorized
+  methodNotAllowed: typeof methodNotAllowed
+  notFound: typeof notFound
+  serverError: typeof serverError
 }
 
-function send(this: HttpResponse, status: number) {
+function code(this: HttpResponse, status: number): HttpResponse {
   this.statusCode = status
-  this.end()
+  return this
 }
 
-function sendText(this: HttpResponse, status: number, data: string): void {
-  this.writeHead(status, { 'Content-Type': 'text/plain' })
-  this.end(data)
+function type(this: HttpResponse, contentType: string): HttpResponse {
+  this.setHeader('Content-Type', contentType)
+  return this
 }
 
-function sendJson(this: HttpResponse, status: number, data: unknown): void {
-  this.writeHead(status, { 'Content-Type': 'application/json' })
-  this.end(typeof data === 'string' ? data : JSON.stringify(data))
-}
-
-function sendXml(this: HttpResponse, status: number, data: string): void {
-  this.writeHead(status, {
-    'Content-Type': 'application/xml',
-    'Content-Length': Buffer.byteLength(data),
-  })
-  this.end(data.trim())
+function send(this: HttpResponse, body?: unknown) {
+  if (body === undefined || body === null || this.getHeader('Content-Type')) {
+    this.end(body)
+  } else if (typeof body === 'string') {
+    this.setHeader('Content-Type', 'text/plain; charset=utf-8')
+    this.end(body)
+  } else if (Buffer.isBuffer(body)) {
+    this.setHeader('Content-Type', 'application/octet-stream')
+    this.end(body)
+  } else if (typeof body === 'object') {
+    this.setHeader('Content-Type', 'application/json; charset=utf-8')
+    this.end(JSON.stringify(body))
+  } else {
+    this.setHeader('Content-Type', 'text/plain; charset=utf-8')
+    this.end(String(body))
+  }
 }
 
 function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
@@ -46,43 +50,42 @@ function redirect(this: HttpResponse, url: string, permanent: boolean = true) {
   this.end()
 }
 
-function sendOptions(this: HttpResponse, methods: RouteMethod[] | string) {
+function options(this: HttpResponse, methods: RouteMethod[] | string) {
   this.writeHead(204, { Allow: Array.isArray(methods) ? methods.join(', ') : methods })
   this.end()
 }
 
-function sendUnauthorized(this: HttpResponse, msg: string) {
+function unauthorized(this: HttpResponse, msg: string = 'unauthorized') {
   this.writeHead(401, { 'Content-Type': 'text/plain' })
   this.end(msg)
 }
 
-function sendMethodNotAllowed(this: HttpResponse, methods: RouteMethod[]) {
+function methodNotAllowed(this: HttpResponse, methods: RouteMethod[]) {
   this.writeHead(405, { Allow: methods.join(', ') })
   this.end()
 }
 
-function sendNotFound(this: HttpResponse): void {
+function notFound(this: HttpResponse): void {
   this.writeHead(404, { 'Content-Type': 'application/json' })
   this.end(JSON.stringify({ error: 'Not found' }))
 }
 
-function sendServerError(this: HttpResponse, msg = 'Internal Server Error'): void {
+function serverError(this: HttpResponse, msg = 'Internal Server Error'): void {
   this.writeHead(500, { 'Content-Type': 'application/json' })
   this.end(JSON.stringify({ error: msg }))
 }
 
 export function toHttpResponse(res: ServerResponse, isHead = false): HttpResponse {
   const dres = res as HttpResponse
+  dres.code = code
+  dres.type = type
   dres.send = send
-  dres.sendText = sendText
-  dres.sendJson = sendJson
-  dres.sendXml = sendXml
   dres.redirect = redirect
-  dres.sendOptions = sendOptions
-  dres.sendUnauthorized = sendUnauthorized
-  dres.sendMethodNotAllowed = sendMethodNotAllowed
-  dres.sendNotFound = sendNotFound
-  dres.sendServerError = sendServerError
+  dres.options = options
+  dres.unauthorized = unauthorized
+  dres.methodNotAllowed = methodNotAllowed
+  dres.notFound = notFound
+  dres.serverError = serverError
 
   /**
    * Overrides the `write` and `end` methods on the response object for HEAD requests.

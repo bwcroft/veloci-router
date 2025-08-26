@@ -37,7 +37,7 @@ const rootMiddlware: RouteMiddleware<string, RootMiddlwareCtx> = (req, res, ctx,
 type AuthMiddlewareCtx = { authorized: boolean }
 const authMiddleware: RouteMiddleware<string, AuthMiddlewareCtx> = (req, res, ctx, next) => {
   if (ctx.searchParams.get('trustme') !== 'true') {
-    res.sendUnauthorized('Unauthorized')
+    res.unauthorized()
   } else {
     ctx.authorized = true
   }
@@ -54,7 +54,7 @@ const routeMap: RouteMap = {
       testKey: 'text',
       testVal: 'root',
       handler: (req, res) => {
-        res.sendText(200, 'root')
+        res.send('root')
       },
     },
     {
@@ -65,7 +65,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { method: 'get' },
       handler: (req, res) => {
-        res.sendJson(200, { method: 'get' })
+        res.send({ method: 'get' })
       },
     },
     {
@@ -76,7 +76,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: {},
       handler: (req, res) => {
-        res.sendJson(200, { method: 'head' })
+        res.send({ method: 'head' })
       },
     },
     {
@@ -87,7 +87,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { method: 'post' },
       handler: (req, res) => {
-        res.sendJson(201, { method: 'post' })
+        res.code(201).send({ method: 'post' })
       },
     },
     {
@@ -98,7 +98,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { method: 'put' },
       handler: (req, res) => {
-        res.sendJson(200, { method: 'put' })
+        res.send({ method: 'put' })
       },
     },
     {
@@ -109,7 +109,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { method: 'patch' },
       handler: (req, res) => {
-        res.sendJson(200, { method: 'patch' })
+        res.send({ method: 'patch' })
       },
     },
     {
@@ -120,7 +120,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { method: 'delete' },
       handler: (req, res) => {
-        res.sendJson(200, { method: 'delete' })
+        res.send({ method: 'delete' })
       },
     },
     {
@@ -140,9 +140,9 @@ const routeMap: RouteMap = {
       code: 401,
       testPath: '/unauthorized',
       testKey: 'text',
-      testVal: 'Unauthorized',
+      testVal: 'unauthorized',
       handler: (_, res) => {
-        res.send(300)
+        res.code(300).send()
       },
       config: {
         middleware: [authMiddleware],
@@ -157,9 +157,9 @@ const routeMap: RouteMap = {
       testVal: 'Authorized',
       handler: (_, res, ctx: RouteContext<string, AuthMiddlewareCtx>) => {
         if (ctx?.authorized) {
-          res.sendText(200, 'Authorized')
+          res.send('Authorized')
         } else {
-          res.sendServerError()
+          res.serverError()
         }
       },
       config: {
@@ -174,7 +174,7 @@ const routeMap: RouteMap = {
       testKey: 'body',
       testVal: { root: true },
       handler: (_, res, ctx: RouteContext<string, RootMiddlwareCtx>) => {
-        res.sendJson(200, { root: ctx?.root })
+        res.send({ root: ctx?.root })
       },
     },
     {
@@ -188,7 +188,7 @@ const routeMap: RouteMap = {
         const success = await new Promise((resolve) => {
           setTimeout(() => resolve(true), 150)
         })
-        res.sendJson(200, { success })
+        res.send({ success })
       },
     },
     {
@@ -199,7 +199,7 @@ const routeMap: RouteMap = {
       testKey: 'text',
       testVal: 'images/logo.png',
       handler: async (_, res, ctx) => {
-        res.sendText(200, ctx.params?.['*'] || '')
+        res.send(ctx.params?.['*'] || '')
       },
     },
   ],
@@ -215,7 +215,7 @@ const routeMap: RouteMap = {
           testKey: 'body',
           testVal: { first: 'bob', last: 'johnson' },
           handler: (req, res) => {
-            res.sendJson(200, { first: 'bob', last: 'johnson' })
+            res.send({ first: 'bob', last: 'johnson' })
           },
         },
         {
@@ -226,7 +226,7 @@ const routeMap: RouteMap = {
           testKey: 'body',
           testVal: { first: 'bob', last: 'johnson' },
           handler: (req, res) => {
-            res.sendJson(201, req.body)
+            res.code(201).send(req.body)
           },
         },
       ],
@@ -245,9 +245,9 @@ const routeMap: RouteMap = {
               handler: (req, res, ctx) => {
                 const id = Number(ctx.params?.id)
                 if (typeof id === 'number') {
-                  res.sendJson(200, { id, first: 'billy', last: 'bob' })
+                  res.send({ id, first: 'billy', last: 'bob' })
                 } else {
-                  res.sendServerError()
+                  res.serverError()
                 }
               },
             },
@@ -262,9 +262,9 @@ const routeMap: RouteMap = {
                 const id = Number(ctx.params?.id)
                 const data = typeof req.body === 'object' ? req.body : {}
                 if (typeof id === 'number') {
-                  res.sendJson(200, { ...data, id })
+                  res.send({ ...data, id })
                 } else {
-                  res.sendServerError()
+                  res.serverError()
                 }
               },
             },
@@ -279,9 +279,9 @@ const routeMap: RouteMap = {
                 const id = Number(ctx.params?.id)
                 const data = typeof req.body === 'object' ? req.body : {}
                 if (typeof id === 'number') {
-                  res.sendJson(200, { ...data, id })
+                  res.send({ ...data, id })
                 } else {
-                  res.sendServerError()
+                  res.serverError()
                 }
               },
             },
@@ -293,7 +293,7 @@ const routeMap: RouteMap = {
               testKey: 'text',
               testVal: '',
               handler: (req, res) => {
-                res.send(200)
+                res.send()
               },
             },
           ],
