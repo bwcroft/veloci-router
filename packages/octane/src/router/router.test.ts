@@ -191,6 +191,17 @@ const routeMap: RouteMap = {
         res.sendJson(200, { success })
       },
     },
+    {
+      path: '/files/*',
+      method: 'get',
+      code: 200,
+      testPath: '/files/images/logo.png',
+      testKey: 'text',
+      testVal: 'images/logo.png',
+      handler: async (_, res, ctx) => {
+        res.sendText(200, ctx.params?.['*'] || '')
+      },
+    },
   ],
   groups: [
     {

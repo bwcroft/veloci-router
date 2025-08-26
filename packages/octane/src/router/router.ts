@@ -56,9 +56,13 @@ export class Router {
 
   private getUrlParamName(segment: string) {
     let paramName: string | undefined
+
     if (segment.startsWith(':')) {
       paramName = segment.slice(1)
+    } else if (segment === '*') {
+      paramName = '*'
     }
+
     return paramName
   }
 
@@ -75,7 +79,7 @@ export class Router {
             `Route conflict: "${fullPath}" has conflicting parameter "${segment}" to another paths parameter "${node.paramName}"`,
           )
         } else if (!node.paramName || !node.paramChild) {
-          node.paramName = segment.slice(1)
+          node.paramName = paramName
           node.paramChild = new RouterNode()
         }
         node = node.paramChild
@@ -97,19 +101,27 @@ export class Router {
       const params: RouteContext['params'] = {}
       let node: RouterNode | undefined = this.root
 
-      if (node) {
-        for (const segment of segments) {
-          const segnode: RouterNode | undefined = node?.children.get(segment)
-          if (segnode) {
-            node = segnode
-          } else if (node?.paramName && node.paramChild) {
-            params[node.paramName] = segment
-            node = node.paramChild
-          } else {
-            node = undefined
-            break
-          }
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i]
+        const mnode: RouterNode | undefined = node?.children.get(segment)
+
+        if (mnode) {
+          node = mnode
+        } else if (node?.paramName && node.paramChild && !node.isSplat) {
+          params[node.paramName] = segment
+          node = node.paramChild
+        } else if (node?.paramName && node.paramChild) {
+          params[node.paramName] = segments.slice(i).join('/')
+          node = node.paramChild
+          break
+        } else {
+          node = undefined
+          break
         }
+      }
+
+      if (node?.isSplat) {
+        console.log('NODE: ', node)
       }
 
       if (!node || !node.handlers.size) {

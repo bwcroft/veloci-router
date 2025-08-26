@@ -4,6 +4,24 @@ import { RouteMethod } from './router'
 import { allowedBodyMethods } from '../decorators/requestDecorators'
 
 describe('RouterNode', () => {
+  describe('isSplat', () => {
+    it('should be a splat node', () => {
+      const node = new RouterNode({
+        paramName: '*',
+        handlers: new Map([['GET', [() => {}]]]),
+      })
+      expect(node.isSplat).toBe(true)
+    })
+
+    it('should not be a splat node', () => {
+      const node = new RouterNode({
+        paramName: 'name',
+        handlers: new Map([['GET', [() => {}]]]),
+      })
+      expect(node.isSplat).toBe(false)
+    })
+  })
+
   describe('getHandlers', () => {
     it('should return GET handler and fallback to GET handler when HEAD handler is not set', () => {
       const method: RouteMethod = 'GET'

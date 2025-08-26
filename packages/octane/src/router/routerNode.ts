@@ -56,4 +56,8 @@ export class RouterNode {
 
     return result
   }
+
+  get isSplat(): boolean {
+    return this.paramName === '*'
+  }
 }
